@@ -1,0 +1,5 @@
+build
+dist
+docs/source/generated
+docs/build
+src/*.egg-info

@@ -1,0 +1,4 @@
+tensorflow==2.0.0-rc1
+matplotlib
+sphinx
+sphinx-rtd-theme
