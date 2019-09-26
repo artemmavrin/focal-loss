@@ -15,7 +15,7 @@ Installation
 
         pip install git+https://github.com/artemmavrin/focal-loss.git
 
-    Alternatively, install the a recent release from the
+    Alternatively, install a recent release from the
     `Python Package Index (PyPI) <https://pypi.org/project/focal-loss>`__:
 
     .. code-block:: bash
