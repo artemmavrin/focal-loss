@@ -323,11 +323,9 @@ class BinaryFocalLoss(LossFunctionWrapper):
 
     def __init__(self, gamma, *, pos_weight=None, from_logits=False,
                  label_smoothing=None, **kwargs):
-        super(BinaryFocalLoss, self).__init__(fn=binary_focal_loss, gamma=gamma,
-                                              pos_weight=pos_weight,
-                                              from_logits=from_logits,
-                                              label_smoothing=label_smoothing,
-                                              **kwargs)
+        super().__init__(fn=binary_focal_loss, gamma=gamma,
+                         pos_weight=pos_weight, from_logits=from_logits,
+                         label_smoothing=label_smoothing, **kwargs)
 
 
 # Helper functions below
