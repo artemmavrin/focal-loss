@@ -3,7 +3,7 @@ language: python
 python:
   - "3.7"
 install:
-  - pip install tensorflow==2.0.0-rc1
+  - pip install tensorflow==2.0.0-rc2
   - make dev
   - pip install codecov
 script:
