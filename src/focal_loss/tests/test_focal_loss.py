@@ -11,7 +11,7 @@ from focal_loss import binary_focal_loss, BinaryFocalLoss
 
 # Synthetic label/prediction data as pure Python lists
 Y_TRUE_LIST = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
-Y_PRED_LOGITS_LIST = [-5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0]
+Y_PRED_LOGITS_LIST = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4]
 Y_PRED_PROB_LIST = [1 / (1 + exp(-y)) for y in Y_PRED_LOGITS_LIST]
 
 # Synthetic label/prediction data as NumPy arrays

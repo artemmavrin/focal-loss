@@ -4,6 +4,8 @@
 #  ) _)(  O )( (__ /    \/ (_/\  / (_/\(  O )\___ \\___ \
 # (__)  \__/  \___)\_/\_/\____/  \____/ \__/ (____/(____/
 
+from functools import partial
+
 import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.keras.losses import LossFunctionWrapper
@@ -233,9 +235,11 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
     label_smoothing = check_float(label_smoothing, name='label_smoothing',
                                   minimum=0, maximum=1, allow_none=True)
 
-    # Ensure predictions are a tensor; converting labels to a tensor will be
-    # done in the helper functions
+    # Ensure predictions are a floating point tensor; converting labels to a
+    # tensor will be done in the helper functions
     y_pred = tf.convert_to_tensor(y_pred)
+    if not y_pred.dtype.is_floating:
+        y_pred = tf.dtypes.cast(y_pred, dtype=tf.float32)
 
     # Delegate per-example loss computation to helpers depending on whether
     # predictions are logits or probabilities
@@ -386,7 +390,7 @@ def _binary_focal_loss_from_logits(labels, logits, p, gamma, pos_weight,
     Returns
     -------
     tf.Tensor
-        The un-reduced loss.
+        The loss for each example.
     """
     labels = _process_labels(labels=labels, label_smoothing=label_smoothing,
                              dtype=logits.dtype)
@@ -394,6 +398,36 @@ def _binary_focal_loss_from_logits(labels, logits, p, gamma, pos_weight,
     # Compute probabilities for the positive class if they aren't available yet
     if p is None:
         p = tf.math.sigmoid(logits)
+
+    # Without label smoothing we can use TensorFlow's built-in per-example cross
+    # entropy loss functions and multiply the result by the modulating factor.
+    # Otherwise, we compute the focal loss ourselves using a numerically stable
+    # formula below
+    if label_smoothing is None:
+        # The labels and logits tensors' shapes need to be the same for the
+        # built-in cross-entropy functions. Since we want to allow broadcasting,
+        # we do some checks on the shapes and possibly broadcast explicitly
+        # Note: tensor.shape returns a tf.TensorShape, whereas tf.shape(tensor)
+        # returns an int tf.Tensor; this is why both are used below
+        labels_shape = labels.shape
+        logits_shape = logits.shape
+        if not labels_shape.is_fully_defined() or labels_shape != logits_shape:
+            labels_shape = tf.shape(labels)
+            logits_shape = tf.shape(logits)
+            shape = tf.broadcast_dynamic_shape(labels_shape, logits_shape)
+            labels = tf.broadcast_to(labels, shape)
+            logits = tf.broadcast_to(logits, shape)
+        if pos_weight is None:
+            loss_func = tf.nn.sigmoid_cross_entropy_with_logits
+        else:
+            loss_func = partial(tf.nn.weighted_cross_entropy_with_logits,
+                                pos_weight=pos_weight)
+        loss = loss_func(labels=labels, logits=logits)
+        modulation_pos = (1 - p) ** gamma
+        modulation_neg = p ** gamma
+        mask = tf.dtypes.cast(labels, dtype=tf.bool)
+        modulation = tf.where(mask, modulation_pos, modulation_neg)
+        return modulation * loss
 
     # Terms for the positive and negative class components of the loss
     pos_term = labels * ((1 - p) ** gamma)
@@ -440,7 +474,7 @@ def _binary_focal_loss_from_probs(labels, p, gamma, pos_weight,
     Returns
     -------
     tf.Tensor
-        The un-reduced loss.
+        The loss for each example.
     """
     # If we can recover the logits without re-computing them, then use those.
     # This is inspired by how tf.keras.backend.binary_crossentropy currently
