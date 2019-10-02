@@ -194,3 +194,17 @@ def test_train_dummy_binary_classifier():
                                          label_smoothing=label_smoothing)
                 loss = tf.math.reduce_mean(loss)
                 tf.debugging.assert_near(loss, model_loss)
+
+
+def test_get_config():
+    """Check the get_config() method."""
+    for gamma, pos_weight in product((0, 1, 2), (None, 0.5)):
+        for from_logits, label_smoothing in product((True, False), (None, 0.1)):
+            loss1 = BinaryFocalLoss(gamma=gamma, pos_weight=pos_weight,
+                                    from_logits=from_logits,
+                                    label_smoothing=label_smoothing,
+                                    name='binary_focal_loss')
+            config1 = loss1.get_config()
+            loss2 = BinaryFocalLoss(**config1)
+            config2 = loss2.get_config()
+            assert config1 == config2

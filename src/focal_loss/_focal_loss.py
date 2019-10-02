@@ -326,6 +326,28 @@ class BinaryFocalLoss(LossFunctionWrapper):
         super().__init__(fn=binary_focal_loss, gamma=gamma,
                          pos_weight=pos_weight, from_logits=from_logits,
                          label_smoothing=label_smoothing, **kwargs)
+        self.gamma = gamma
+        self.pos_weight = pos_weight
+        self.from_logits = from_logits
+        self.label_smoothing = label_smoothing
+
+    def get_config(self):
+        """Returns the config of the layer.
+
+        A layer config is a Python dictionary containing the configuration of a
+        layer. The same layer can be re-instantiated later (without its trained
+        weights) from this configuration.
+
+        Returns
+        -------
+        dict
+            This layer's config.
+        """
+        config = super().get_config()
+        config.update(gamma=self.gamma, pos_weight=self.pos_weight,
+                      from_logits=self.from_logits,
+                      label_smoothing=self.label_smoothing)
+        return config
 
 
 # Helper functions below
