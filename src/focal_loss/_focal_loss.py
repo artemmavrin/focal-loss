@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.keras.losses import LossFunctionWrapper
 
-from ._validation import check_bool, check_float
+from .utils.validation import check_bool, check_float
 
 _EPSILON = tf.keras.backend.epsilon()
 

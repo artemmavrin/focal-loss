@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from focal_loss._validation import (check_bool, check_int, check_float,
-                                    check_type)
+from focal_loss.utils.validation import (check_bool, check_int, check_float,
+                                         check_type)
 
 
 def test_check_bool():
