@@ -59,3 +59,4 @@ for :mod:`tf.keras.losses` functions and classes, respectively.
 
     install
     api
+    Source Code on GitHub <https://github.com/artemmavrin/focal-loss>
