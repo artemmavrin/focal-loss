@@ -1,4 +1,4 @@
-"""Setup script for neural-numpy."""
+"""Setup script."""
 
 import pathlib
 import re
@@ -16,6 +16,7 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(tf_error_msg)
 else:
     if tf.__version__ < '2':
+        tf_error_msg = f'Found TensorFlow {tf.__version__}' + tf_error_msg
         raise ModuleNotFoundError(tf_error_msg)
 
 # Directory of this setup.py file
@@ -72,8 +73,8 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    # TensorFlow is not listed as a requirement because there is no robust way
-    # currently to specify the correct CPU or GPU version
+    # TensorFlow is not listed as a requirement because there is currently no
+    # robust way to specify the correct CPU or GPU version
     # https://github.com/tensorflow/tensorflow/issues/7166
     install_requires=[],
     extras_require={
