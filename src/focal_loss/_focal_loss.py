@@ -309,7 +309,7 @@ class BinaryFocalLoss(LossFunctionWrapper):
         model = tf.keras.Model(...)
         model.compile(
             optimizer=...,
-            loss=BinaryFocalLoss(gamma=2),  # Look here!
+            loss=BinaryFocalLoss(gamma=2),  # Used here like a tf.keras loss
             metrics=...,
         )
         history = model.fit(...)

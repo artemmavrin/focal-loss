@@ -48,7 +48,7 @@ for :mod:`tf.keras.losses` functions and classes, respectively.
     model = tf.keras.Model(...)
     model.compile(
         optimizer=...,
-        loss=BinaryFocalLoss(gamma=2)
+        loss=BinaryFocalLoss(gamma=2),  # Used here like a tf.keras loss
         metrics=...,
     )
     history = model.fit(...)
