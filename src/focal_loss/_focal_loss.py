@@ -82,15 +82,28 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
         same shapes). In general, the shape of the output is the result of
         broadcasting the shapes of `y_true` and `y_pred`.
 
+    Warnings
+    --------
+    This function does not reduce its output to a scalar, so it cannot be passed
+    to :meth:`tf.keras.Model.compile` as a `loss` argument. Instead, use the
+    wrapper class :class:`~focal_loss.BinaryFocalLoss`.
+
     Examples
     --------
 
+    This function computes the per-example focal loss between a label and
+    prediction tensor:
+
     >>> import numpy as np
     >>> from focal_loss import binary_focal_loss
-    >>> loss = binary_focal_loss([0, 1, 1], [0.1, 0.7, 0.9], gamma=2)
     >>> np.set_printoptions(precision=3)
+    >>> loss = binary_focal_loss([0, 1, 1], [0.1, 0.7, 0.9], gamma=2)
     >>> print(loss.numpy())
     [0.001 0.032 0.001]
+
+    Below is a visualization of the focal loss between the positive class and
+    predicted probabilities between 0 and 1. Note that as :math:`\gamma`
+    increases, the losses for predictions closer to 1 get smoothly pushed to 0.
 
     .. plot::
         :include-source:
