@@ -2,6 +2,8 @@
 
 from itertools import product
 from math import exp
+import os
+import shutil
 
 import numpy as np
 import tensorflow as tf
@@ -208,3 +210,52 @@ def test_get_config():
             loss2 = BinaryFocalLoss(**config1)
             config2 = loss2.get_config()
             assert config1 == config2
+
+
+def test_save_and_restore():
+    """Check whether models compiled with BinaryFocalLoss can be saved/loaded.
+    """
+    n_features = 10
+    for gamma, pos_weight in product((0, 1, 2), (None, 0.5)):
+        for from_logits, label_smoothing in product((True, False), (None, 0.1)):
+            if from_logits:
+                activation = None
+            else:
+                activation = 'sigmoid'
+            # Just a linear classifier
+            model = tf.keras.Sequential(layers=[
+                tf.keras.layers.Input(shape=n_features),
+                tf.keras.layers.Dense(units=1, activation=activation),
+            ])
+            model.compile(
+                optimizer='sgd',
+                loss=BinaryFocalLoss(gamma=gamma, pos_weight=pos_weight,
+                                     from_logits=from_logits,
+                                     label_smoothing=label_smoothing),
+                metrics=['accuracy'],
+            )
+            weights = model.weights
+
+            # Try to save the model to the HDF5 format
+            h5_filepath = 'model.h5'
+            model.save(h5_filepath, save_format='h5')
+
+            h5_restored_model = tf.keras.models.load_model(h5_filepath)
+            h5_restored_weights = h5_restored_model.weights
+            for weight, h5_restored_weight in zip(weights, h5_restored_weights):
+                tf.debugging.assert_equal(weight, h5_restored_weight)
+
+            # Delete the created HDF5 file
+            os.unlink(h5_filepath)
+
+            # Try to save the model to the SavedModel format
+            sm_filepath = 'model'
+            model.save(sm_filepath, save_format='tf')
+
+            sm_restored_model = tf.keras.models.load_model(sm_filepath)
+            sm_restored_weights = sm_restored_model.weights
+            for weight, sm_restored_weight in zip(weights, sm_restored_weights):
+                tf.debugging.assert_equal(weight, sm_restored_weight)
+
+            # Delete the created SavedModel directory
+            shutil.rmtree(sm_filepath, ignore_errors=True)

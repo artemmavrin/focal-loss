@@ -10,6 +10,7 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from tensorflow.python.keras.losses import LossFunctionWrapper
 
+from .utils.keras import register_keras_custom_object
 from .utils.validation import check_bool, check_float
 
 _EPSILON = tf.keras.backend.epsilon()
@@ -267,6 +268,7 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
                                              label_smoothing=label_smoothing)
 
 
+@register_keras_custom_object
 class BinaryFocalLoss(LossFunctionWrapper):
     r"""Focal loss function for binary classification.
 
