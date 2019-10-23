@@ -7,8 +7,6 @@
 from functools import partial
 
 import tensorflow as tf
-from tensorflow.python.framework.ops import EagerTensor
-from tensorflow.python.keras.losses import LossFunctionWrapper
 
 from .utils.keras import register_keras_custom_object
 from .utils.validation import check_bool, check_float
@@ -259,7 +257,7 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
     # predictions are logits or probabilities
     if from_logits:
         return _binary_focal_loss_from_logits(labels=y_true, logits=y_pred,
-                                              p=None, gamma=gamma,
+                                              gamma=gamma,
                                               pos_weight=pos_weight,
                                               label_smoothing=label_smoothing)
     else:
@@ -269,7 +267,7 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
 
 
 @register_keras_custom_object
-class BinaryFocalLoss(LossFunctionWrapper):
+class BinaryFocalLoss(tf.keras.losses.Loss):
     r"""Focal loss function for binary classification.
 
     This loss function generalizes binary cross-entropy by introducing a
@@ -297,9 +295,8 @@ class BinaryFocalLoss(LossFunctionWrapper):
         `label_smoothing` leading to label values closer to 0.5.
 
     **kwargs : keyword arguments
-        Other keyword arguments for
-        :class:`tensorflow.python.keras.losses.LossFunctionWrapper` (e.g.,
-        `name` or `reduction`).
+        Other keyword arguments for :class:`tf.keras.losses.Loss` (e.g., `name`
+        or `reduction`).
 
     Examples
     --------
@@ -338,9 +335,15 @@ class BinaryFocalLoss(LossFunctionWrapper):
 
     def __init__(self, gamma, *, pos_weight=None, from_logits=False,
                  label_smoothing=None, **kwargs):
-        super().__init__(fn=binary_focal_loss, gamma=gamma,
-                         pos_weight=pos_weight, from_logits=from_logits,
-                         label_smoothing=label_smoothing, **kwargs)
+        # Validate arguments
+        gamma = check_float(gamma, name='gamma', minimum=0)
+        pos_weight = check_float(pos_weight, name='pos_weight', minimum=0,
+                                 allow_none=True)
+        from_logits = check_bool(from_logits, name='from_logits')
+        label_smoothing = check_float(label_smoothing, name='label_smoothing',
+                                      minimum=0, maximum=1, allow_none=True)
+
+        super().__init__(**kwargs)
         self.gamma = gamma
         self.pos_weight = pos_weight
         self.from_logits = from_logits
@@ -363,6 +366,33 @@ class BinaryFocalLoss(LossFunctionWrapper):
                       from_logits=self.from_logits,
                       label_smoothing=self.label_smoothing)
         return config
+
+    def call(self, y_true, y_pred):
+        """Compute the per-example focal loss.
+
+        This method simply calls :meth:`~focal_loss.binary_focal_loss` with the
+        appropriate arguments.
+
+        Parameters
+        ----------
+        y_true : tensor-like
+            Binary (0 or 1) class labels.
+
+        y_pred : tensor-like
+            Either probabilities for the positive class or logits for the
+            positive class, depending on the `from_logits` attribute. The shapes
+            of `y_true` and `y_pred` should be broadcastable.
+
+        Returns
+        -------
+        :class:`tf.Tensor`
+            The per-example focal loss. Reduction to a scalar is handled by
+            this layer's :meth:`~focal_loss.BinaryFocalLoss.__call__` method.
+        """
+        return binary_focal_loss(y_true=y_true, y_pred=y_pred, gamma=self.gamma,
+                                 pos_weight=self.pos_weight,
+                                 from_logits=self.from_logits,
+                                 label_smoothing=self.label_smoothing)
 
 
 # Helper functions below
@@ -395,7 +425,7 @@ def _process_labels(labels, label_smoothing, dtype):
     return labels
 
 
-def _binary_focal_loss_from_logits(labels, logits, p, gamma, pos_weight,
+def _binary_focal_loss_from_logits(labels, logits, gamma, pos_weight,
                                    label_smoothing):
     """Compute focal loss from logits using a numerically stable formula.
 
@@ -406,9 +436,6 @@ def _binary_focal_loss_from_logits(labels, logits, p, gamma, pos_weight,
 
     logits : tf.Tensor
         Logits for the positive class.
-
-    p : tf.Tensor or None
-        Pre-computed probabilities, if available.
 
     gamma : float
         Focusing parameter.
@@ -430,9 +457,8 @@ def _binary_focal_loss_from_logits(labels, logits, p, gamma, pos_weight,
     labels = _process_labels(labels=labels, label_smoothing=label_smoothing,
                              dtype=logits.dtype)
 
-    # Compute probabilities for the positive class if they aren't available yet
-    if p is None:
-        p = tf.math.sigmoid(logits)
+    # Compute probabilities for the positive class
+    p = tf.math.sigmoid(logits)
 
     # Without label smoothing we can use TensorFlow's built-in per-example cross
     # entropy loss functions and multiply the result by the modulating factor.
@@ -511,18 +537,6 @@ def _binary_focal_loss_from_probs(labels, p, gamma, pos_weight,
     tf.Tensor
         The loss for each example.
     """
-    # If we can recover the logits without re-computing them, then use those.
-    # This is inspired by how tf.keras.backend.binary_crossentropy currently
-    # handles probabilities coming from a sigmoid output activation; see e.g.,
-    # https://github.com/tensorflow/tensorflow/blob/41474120daa68791e09eae99c8bdd8df093eda31/tensorflow/python/keras/backend.py#L4559-L4589
-    if (not isinstance(p, (EagerTensor, tf.Variable)) and p.op.type == 'Sigmoid'
-            and len(p.op.inputs) == 1):
-        logits = p.op.inputs[0]
-        return _binary_focal_loss_from_logits(labels=labels, logits=logits,
-                                              p=p, gamma=gamma,
-                                              pos_weight=pos_weight,
-                                              label_smoothing=label_smoothing)
-
     # Predicted probabilities for the negative class
     q = 1 - p
 
