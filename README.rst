@@ -76,20 +76,18 @@ Installation
 
         pip install focal-loss
 
-    .. note::
+    **Note.** To install the project for development (e.g., to make changes to
+    the source code), clone the project repository from GitHub and run
+    :code:`make dev`:
 
-        To install the project for development (e.g., to make changes to the
-        source code), clone the project repository from GitHub and run
-        :code:`make dev`:
+    .. code-block:: bash
 
-        .. code-block:: bash
+        git clone https://github.com/artemmavrin/focal-loss.git
+        cd focal-loss
+        make dev
 
-            git clone https://github.com/artemmavrin/focal-loss.git
-            cd focal-loss
-            make dev
-
-        This will additionally install the requirements needed
-        to run tests, check code coverage, and produce documentation.
+    This will additionally install the requirements needed
+    to run tests, check code coverage, and produce documentation.
 
 References
 ----------

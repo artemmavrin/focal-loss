@@ -6,11 +6,11 @@ DOCS := docs
 SPHINXOPTS := '-W'
 RM := rm -rf
 
-.PHONY: clean dev docs help install py_info test
+.PHONY: clean dev distribute docs help install py_info test
 
 help:
 	@ echo "Usage:\n"
-	@ echo "make install   Install the package using Setuptools."
+	@ echo "make install   Install the package using pip."
 	@ echo "make dev       Install the package for development using pip."
 	@ echo "make test      Run unit tests and check code coverage."
 	@ echo "make docs      Generate package documentation using Sphinx"
