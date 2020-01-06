@@ -53,6 +53,10 @@ def check_type(obj, base, *, name=None, func=None, allow_none=False,
     Traceback (most recent call last):
     ...
     TypeError: Invalid type. Expected: str. Actual: int.
+    >>> check_type(1, (str, bool))
+    Traceback (most recent call last):
+    ...
+    TypeError: Invalid type. Expected: (str, bool). Actual: int.
     >>> print(check_type(None, str, allow_none=True))
     None
     >>> check_type(1, str, name='num')
@@ -88,7 +92,10 @@ def check_type(obj, base, *, name=None, func=None, allow_none=False,
             raise ValueError('Parameter \'func\' must be callable or None.')
 
     # Handle wrong type
-    expect = base.__name__
+    if isinstance(base, tuple):
+        expect = '(' + ', '.join(cls.__name__ for cls in base) + ')'
+    else:
+        expect = base.__name__
     actual = type(obj).__name__
     if error_message is None:
         error_message = 'Invalid type'
