@@ -32,6 +32,7 @@ Installation
 
             git clone https://github.com/artemmavrin/focal-loss.git
             cd focal-loss
+            # Optional but recommended: create a new Python virtual environment first
             make dev
 
         This will additionally install the requirements needed
