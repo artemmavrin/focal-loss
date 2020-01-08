@@ -10,6 +10,10 @@ Focal Loss
     :target: https://pypi.org/project/focal-loss
     :alt: PyPI Package Version
 
+.. image:: https://img.shields.io/github/last-commit/artemmavrin/focal-loss/master
+    :target: https://github.com/artemmavrin/focal-loss
+    :alt: Last Commit
+
 .. image:: https://travis-ci.com/artemmavrin/focal-loss.svg?branch=master
     :target: https://travis-ci.com/artemmavrin/focal-loss
     :alt: Build Status
