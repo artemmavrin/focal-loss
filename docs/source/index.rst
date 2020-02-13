@@ -14,10 +14,6 @@ Focal Loss
     :target: https://github.com/artemmavrin/focal-loss
     :alt: Last Commit
 
-.. image:: https://travis-ci.com/artemmavrin/focal-loss.svg?branch=master
-    :target: https://travis-ci.com/artemmavrin/focal-loss
-    :alt: Travis CI Build Status
-
 .. image:: https://github.com/artemmavrin/focal-loss/workflows/Python%20package/badge.svg
     :target: https://github.com/artemmavrin/focal-loss/actions?query=workflow%3A%22Python+package%22
     :alt: GitHub Actions Build Status
