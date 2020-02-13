@@ -65,6 +65,7 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
@@ -83,7 +84,6 @@ setup(
         'dev': [
             'numpy',
             'scipy',
-            'jupyter',
             'matplotlib',
             'seaborn',
             'pytest',
