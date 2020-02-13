@@ -25,7 +25,7 @@ dev: clean py_info
 	$(PIP) install --upgrade --editable .[dev]
 
 test: clean py_info
-	$(COVERAGE) run -m pytest
+	$(COVERAGE) run -m pytest src
 	$(COVERAGE) report --show-missing
 
 docs: clean
