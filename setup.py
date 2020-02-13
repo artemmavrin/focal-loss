@@ -84,7 +84,6 @@ setup(
         'dev': [
             'numpy',
             'scipy',
-            'jupyter',
             'matplotlib',
             'seaborn',
             'pytest',
