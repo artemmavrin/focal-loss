@@ -1,4 +1,4 @@
-"""Focal loss unit tests."""
+"""Binary focal loss unit tests."""
 
 from math import exp
 import os
@@ -23,9 +23,9 @@ Y_PRED_LOGITS_ARRAY = np.asarray(Y_PRED_LOGITS_LIST, dtype=np.float32)
 Y_PRED_PROB_ARRAY = sigmoid(Y_PRED_LOGITS_ARRAY)
 
 # Synthetic label/prediction data as TensorFlow tensors
-Y_TRUE_TENSOR = tf.convert_to_tensor(Y_TRUE_LIST, dtype=tf.int64)
+Y_TRUE_TENSOR = tf.convert_to_tensor(Y_TRUE_LIST, dtype=tf.dtypes.int64)
 Y_PRED_LOGITS_TENSOR = tf.convert_to_tensor(Y_PRED_LOGITS_LIST,
-                                            dtype=tf.float32)
+                                            dtype=tf.dtypes.float32)
 Y_PRED_PROB_TENSOR = tf.math.sigmoid(Y_PRED_LOGITS_TENSOR)
 
 Y_TRUE = [Y_TRUE_LIST, Y_TRUE_ARRAY, Y_TRUE_TENSOR]
@@ -35,7 +35,7 @@ Y_PRED_PROB = [Y_PRED_PROB_LIST, Y_PRED_PROB_ARRAY, Y_PRED_PROB_TENSOR]
 
 def numpy_binary_focal_loss(y_true, y_pred, gamma, from_logits=False,
                             pos_weight=None, label_smoothing=None):
-    """Simple focal loss implementation using NumPy."""
+    """Simple binary focal loss implementation using NumPy."""
     # Convert to arrays
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
@@ -145,8 +145,8 @@ class BinaryFocalLossTest(parameterized.TestCase, tf.test.TestCase):
         focal_loss = binary_focal_loss(y_true=y_true, y_pred=y_pred, gamma=0,
                                        from_logits=True)
         ce = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=tf.dtypes.cast(y_true, dtype=tf.float32),
-            logits=tf.dtypes.cast(y_pred, dtype=tf.float32),
+            labels=tf.dtypes.cast(y_true, dtype=tf.dtypes.float32),
+            logits=tf.dtypes.cast(y_pred, dtype=tf.dtypes.float32),
         )
         self.assertAllClose(focal_loss, ce)
 
@@ -158,8 +158,8 @@ class BinaryFocalLossTest(parameterized.TestCase, tf.test.TestCase):
         focal_loss = binary_focal_loss(y_true=y_true, y_pred=y_pred, gamma=0,
                                        from_logits=True, pos_weight=pos_weight)
         ce = tf.nn.weighted_cross_entropy_with_logits(
-            labels=tf.dtypes.cast(y_true, dtype=tf.float32),
-            logits=tf.dtypes.cast(y_pred, dtype=tf.float32),
+            labels=tf.dtypes.cast(y_true, dtype=tf.dtypes.float32),
+            logits=tf.dtypes.cast(y_pred, dtype=tf.dtypes.float32),
             pos_weight=pos_weight,
         )
         self.assertAllClose(focal_loss, ce)

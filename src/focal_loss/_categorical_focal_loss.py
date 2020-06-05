@@ -87,7 +87,7 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         A wrapper around this function that makes it a
         :class:`tf.keras.losses.Loss`.
     """
-    gamma = tf.convert_to_tensor(gamma)
+    gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
     scalar_gamma = gamma.shape == []
 
     y_pred = tf.convert_to_tensor(y_pred)
@@ -100,6 +100,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     else:
         probs = y_pred
     batch_size = tf.shape(y_true)[0]
+
+    # For some reason y_true becomes shaped like (batch, 1) during training, so
+    # the next line is a hack to ensure it's always rank 1 (needed for stacking)
+    y_true = tf.cond(tf.rank(y_true) == 1, lambda: y_true, lambda: y_true[:, 0])
+
     indices = tf.stack([tf.range(batch_size), y_true], axis=1)
     probs = tf.gather_nd(probs, indices)
 
