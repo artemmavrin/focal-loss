@@ -153,6 +153,25 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
         )
         self.assertAllClose(focal_loss, ce)
 
+    def _test_reduce_to_keras_loss(self, y_true, y_pred, from_logits: bool):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        keras_loss = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=from_logits)
+        focal_loss = SparseCategoricalFocalLoss(
+            gamma=0, from_logits=from_logits)
+        self.assertAllClose(keras_loss(y_true, y_pred),
+                            focal_loss(y_true, y_pred))
+
+    @named_parameters_with_testcase_names(y_true=Y_TRUE, y_pred=Y_PRED_LOGITS)
+    def test_reduce_to_keras_loss_logits(self, y_true, y_pred):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        self._test_reduce_to_keras_loss(y_true, y_pred, from_logits=True)
+
+    @named_parameters_with_testcase_names(y_true=Y_TRUE, y_pred=Y_PRED_PROB)
+    def test_reduce_to_keras_loss_probabilities(self, y_true, y_pred):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        self._test_reduce_to_keras_loss(y_true, y_pred, from_logits=False)
+
     @named_parameters_with_testcase_names(
         n_examples=100, n_features=16, n_classes=[2, 3], epochs=2, gamma=[0, 2],
         from_logits=[True, False], random_state=np.random.RandomState(0))

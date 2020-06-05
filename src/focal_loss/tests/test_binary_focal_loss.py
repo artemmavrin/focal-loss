@@ -3,6 +3,7 @@
 from math import exp
 import os
 import shutil
+from typing import Optional
 
 from absl.testing import parameterized
 import numpy as np
@@ -163,6 +164,34 @@ class BinaryFocalLossTest(parameterized.TestCase, tf.test.TestCase):
             pos_weight=pos_weight,
         )
         self.assertAllClose(focal_loss, ce)
+
+    def _test_reduce_to_keras_loss(self, y_true, y_pred, from_logits: bool,
+                                   label_smoothing: Optional[float]):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        y_pred = tf.dtypes.cast(y_pred, dtype=tf.dtypes.float32)
+        keras_loss = tf.keras.losses.BinaryCrossentropy(
+            from_logits=from_logits,
+            label_smoothing=(0 if label_smoothing is None else label_smoothing),
+        )
+        focal_loss = BinaryFocalLoss(
+            gamma=0, from_logits=from_logits, label_smoothing=label_smoothing)
+        self.assertAllClose(keras_loss(y_true, y_pred),
+                            focal_loss(y_true, y_pred))
+
+    @named_parameters_with_testcase_names(y_true=Y_TRUE, y_pred=Y_PRED_LOGITS,
+                                          label_smoothing=[None, 0.1, 0.3])
+    def test_reduce_to_keras_loss_logits(self, y_true, y_pred, label_smoothing):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        self._test_reduce_to_keras_loss(y_true, y_pred, from_logits=True,
+                                        label_smoothing=label_smoothing)
+
+    @named_parameters_with_testcase_names(y_true=Y_TRUE, y_pred=Y_PRED_PROB,
+                                          label_smoothing=[None, 0.1, 0.3])
+    def test_reduce_to_keras_loss_probabilities(self, y_true, y_pred,
+                                                label_smoothing):
+        """Focal loss with gamma=0 should be the same as cross-entropy."""
+        self._test_reduce_to_keras_loss(y_true, y_pred, from_logits=False,
+                                        label_smoothing=label_smoothing)
 
     @named_parameters_with_testcase_names(
         n_examples=100, n_features=16, epochs=3, pos_weight=[None, 0.5],

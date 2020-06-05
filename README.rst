@@ -34,19 +34,9 @@ TensorFlow implementation of focal loss [1]_: a loss function generalizing
 binary and multiclass cross-entropy loss that penalizes hard-to-classify
 examples.
 
-The ``focal_loss`` package provides the functions
-
-* ``binary_focal_loss``
-* ``sparse_categorical_focal_loss``
-
-and wrapper classes
-
-* ``BinaryFocalLoss``
-* ``SparseCategoricalFocalLoss``
-
-that can be used as stand-in replacements for
-``tf.keras.losses`` functions and classes, respectively.
-For example,
+The ``focal_loss`` package provides functions and classes that can be used as
+off-the-shelf replacements for ``tf.keras.losses`` functions and classes,
+respectively.
 
 .. code-block:: python
 
@@ -61,6 +51,16 @@ For example,
         metrics=...,
     )
     history = model.fit(...)
+
+The ``focal_loss`` package includes the functions
+
+* ``binary_focal_loss``
+* ``sparse_categorical_focal_loss``
+
+and wrapper classes
+
+* ``BinaryFocalLoss`` (use like ``tf.keras.losses.BinaryCrossentropy``)
+* ``SparseCategoricalFocalLoss`` (use like ``tf.keras.losses.SparseCategoricalCrossentropy``)
 
 Documentation is available at
 `Read the Docs <https://focal-loss.readthedocs.io/en/latest/>`__.

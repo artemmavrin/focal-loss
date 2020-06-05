@@ -38,19 +38,9 @@ multiclass cross-entropy loss that penalizes hard-to-classify examples.
     :alt: Focal loss plot
     :align: center
 
-The :mod:`focal_loss` package provides the functions
-
-* :meth:`~focal_loss.binary_focal_loss`
-* :meth:`~focal_loss.sparse_categorical_focal_loss`
-
-and wrapper classes
-
-* :class:`~focal_loss.BinaryFocalLoss`
-* :class:`~focal_loss.SparseCategoricalFocalLoss`
-
-that can be used as stand-in replacements for :mod:`tf.keras.losses` functions
-and classes, respectively.
-For example,
+The :mod:`focal_loss` package provides functions and classes that can be used as
+off-the-shelf replacements for :mod:`tf.keras.losses` functions and classes,
+respectively.
 
 .. code-block:: python
 
@@ -65,6 +55,16 @@ For example,
         metrics=...,
     )
     history = model.fit(...)
+
+The :mod:`focal_loss` package includes the functions
+
+* :meth:`~focal_loss.binary_focal_loss`
+* :meth:`~focal_loss.sparse_categorical_focal_loss`
+
+and wrapper classes
+
+* :class:`~focal_loss.BinaryFocalLoss` (use like :class:`tf.keras.losses.BinaryCrossentropy`)
+* :class:`~focal_loss.SparseCategoricalFocalLoss` (use like :class:`tf.keras.losses.SparseCategoricalCrossentropy`)
 
 .. toctree::
     :caption: Contents
