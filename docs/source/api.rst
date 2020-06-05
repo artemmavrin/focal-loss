@@ -20,6 +20,7 @@ Classes
     :nosignatures:
 
     BinaryFocalLoss
+    SparseCategoricalFocalLoss
 
 Functions
 ---------
@@ -30,3 +31,4 @@ Functions
     :nosignatures:
 
     binary_focal_loss
+    sparse_categorical_focal_loss
