@@ -1,4 +1,4 @@
-"""TensorFlow Keras focal loss implementation."""
+"""Binary focal loss implementation."""
 #  ____  __    ___   __   __      __     __   ____  ____
 # (  __)/  \  / __) / _\ (  )    (  )   /  \ / ___)/ ___)
 #  ) _)(  O )( (__ /    \/ (_/\  / (_/\(  O )\___ \\___ \

@@ -31,11 +31,22 @@ Focal Loss
     :alt: License
 
 TensorFlow implementation of focal loss [1]_: a loss function generalizing
-binary cross-entropy loss that penalizes hard-to-classify examples.
+binary and multiclass cross-entropy loss that penalizes hard-to-classify
+examples.
 
-The ``focal_loss`` package provides a function ``binary_focal_loss`` and a class
-``BinaryFocalLoss`` that can be used as stand-in replacements for
+The ``focal_loss`` package provides the functions
+
+* ``binary_focal_loss``
+* ``sparse_categorical_focal_loss``
+
+and wrapper classes
+
+* ``BinaryFocalLoss``
+* ``SparseCategoricalFocalLoss``
+
+that can be used as stand-in replacements for
 ``tf.keras.losses`` functions and classes, respectively.
+For example,
 
 .. code-block:: python
 

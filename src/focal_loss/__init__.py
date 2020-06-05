@@ -1,8 +1,11 @@
-from ._focal_loss import binary_focal_loss, BinaryFocalLoss
+from ._binary_focal_loss import binary_focal_loss
+from ._binary_focal_loss import BinaryFocalLoss
+from ._categorical_focal_loss import sparse_categorical_focal_loss
+from ._categorical_focal_loss import SparseCategoricalFocalLoss
 
 # Package information
 __package__ = 'focal-loss'
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __author__ = 'Artem Mavrin'
 __author_email__ = 'artemvmavrin@gmail.com'
 __description__ = 'TensorFlow implementation of focal loss.'
