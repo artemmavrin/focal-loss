@@ -2,7 +2,7 @@ from ._focal_loss import binary_focal_loss, BinaryFocalLoss
 
 # Package information
 __package__ = 'focal-loss'
-__version__ = '0.0.2'
+__version__ = '0.0.4'
 __author__ = 'Artem Mavrin'
 __author_email__ = 'artemvmavrin@gmail.com'
 __description__ = 'TensorFlow implementation of focal loss.'
