@@ -196,7 +196,7 @@ class BinaryFocalLossTest(parameterized.TestCase, tf.test.TestCase):
     @named_parameters_with_testcase_names(
         n_examples=100, n_features=16, epochs=3, pos_weight=[None, 0.5],
         gamma=[0, 2], label_smoothing=[None, 0.1], from_logits=[True, False],
-        random_state=np.random.RandomState(0))
+        random_state=np.random.default_rng(0))
     def test_train_dummy_binary_classifier(self, n_examples, n_features, epochs,
                                            pos_weight, gamma, label_smoothing,
                                            from_logits, random_state):

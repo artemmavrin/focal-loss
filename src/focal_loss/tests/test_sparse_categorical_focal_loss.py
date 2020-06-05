@@ -174,7 +174,7 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
 
     @named_parameters_with_testcase_names(
         n_examples=100, n_features=16, n_classes=[2, 3], epochs=2, gamma=[0, 2],
-        from_logits=[True, False], random_state=np.random.RandomState(0))
+        from_logits=[True, False], random_state=np.random.default_rng(0))
     def test_train_dummy_multiclass_classifier(self, n_examples, n_features,
                                                n_classes, epochs, gamma,
                                                from_logits, random_state):
