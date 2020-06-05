@@ -1,9 +1,18 @@
 """Setup script."""
 
+import os
 import pathlib
 import re
 
 from setuptools import setup, find_packages
+
+# Set the environment variable TF_CPU (to anything) to use tensorflow-cpu
+_TENSORFLOW_CPU = os.environ.get('TF_CPU', None)
+
+# TensorFlow package name and version
+_TENSORFLOW = 'tensorflow' if _TENSORFLOW_CPU is None else 'tensorflow-cpu'
+_MIN_TENSORFLOW_VERSION = '2.2'
+_TENSORFLOW += f'>={_MIN_TENSORFLOW_VERSION}'
 
 # Directory of this setup.py file
 _HERE = pathlib.Path(__file__).parent
@@ -61,7 +70,9 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    install_requires=_read('requirements.txt').splitlines(),
+    install_requires=[
+        _TENSORFLOW,
+    ],
     extras_require={
         # The 'dev' extra is for development, including running tests and
         # generating documentation
