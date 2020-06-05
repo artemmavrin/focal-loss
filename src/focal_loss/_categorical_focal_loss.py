@@ -27,14 +27,15 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     .. math::
 
         L(y, \hat{\mathbf{p}})
-        = -\left(1 - \hat{\mathbf{p}}_y\right)^\gamma \log(\hat{\mathbf{p}}_y)
+        = -\left(1 - \hat{p}_y\right)^\gamma \log(\hat{p}_y)
 
     where
 
     *   :math:`y \in \{0, \ldots, K - 1\}` is an integer class label (:math:`K`
         denotes the number of classes),
-    *   :math:`\hat{\mathbf{p}} \in [0, 1]^K` is a vector representing an
-        estimated probability distribution over the :math:`K` classes,
+    *   :math:`\hat{\mathbf{p}} = (\hat{p}_0, \ldots, \hat{p}_{K-1})
+        \in [0, 1]^K` is a vector representing an estimated probability
+        distribution over the :math:`K` classes,
     *   :math:`\gamma` (gamma, not :math:`y`) is the *focusing parameter* that
         specifies how much higher-confidence correct predictions contribute to
         the overall loss (the higher the :math:`\gamma`, the higher the rate at
@@ -53,8 +54,8 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         parameter.
 
     gamma : float or tensor-like of shape (K,)
-        The focusing parameter :math:`\gamma`. Higher values of `gamma` lead to
-        easy-to-classify examples to contribute less to the loss relative to
+        The focusing parameter :math:`\gamma`. Higher values of `gamma` make
+        easy-to-classify examples contribute less to the loss relative to
         hard-to-classify examples. Must be non-negative. This can be a
         one-dimensional tensor, in which case it specifies a focusing parameter
         for each class.
@@ -66,6 +67,21 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     -------
     :class:`tf.Tensor`
         The focal loss for each example.
+
+    Examples
+    --------
+
+    This function computes the per-example focal loss between a one-dimensional
+    integer label vector and a two-dimensional prediction matrix:
+
+    >>> import numpy as np
+    >>> from focal_loss import sparse_categorical_focal_loss
+    >>> y_true = [0, 1, 2]
+    >>> y_pred = [[0.8, 0.1, 0.1], [0.2, 0.7, 0.1], [0.2, 0.2, 0.6]]
+    >>> loss = sparse_categorical_focal_loss(y_true, y_pred, gamma=2)
+    >>> np.set_printoptions(precision=3)
+    >>> print(loss.numpy())
+    [0.009 0.032 0.082]
 
     Warnings
     --------
@@ -121,9 +137,9 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     r"""Focal loss function for multiclass classification with integer labels.
 
     This loss function generalizes multiclass softmax cross-entropy by
-    introducing a hyperparameter called the *focusing parameter* that allows
-    hard-to-classify examples to be penalized more heavily relative to
-    easy-to-classify examples.
+    introducing a hyperparameter :math:`\gamma` (gamma), called the
+    *focusing parameter*, that allows hard-to-classify examples to be penalized
+    more heavily relative to easy-to-classify examples.
 
     This class is a wrapper around
     :class:`~focal_loss.sparse_categorical_focal_loss`. See the documentation
@@ -131,8 +147,12 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
 
     Parameters
     ----------
-    gamma : float
-        The focusing parameter :math:`\gamma`. Must be non-negative.
+    gamma : float or tensor-like of shape (K,)
+        The focusing parameter :math:`\gamma`. Higher values of `gamma` make
+        easy-to-classify examples contribute less to the loss relative to
+        hard-to-classify examples. Must be non-negative. This can be a
+        one-dimensional tensor, in which case it specifies a focusing parameter
+        for each class.
 
     from_logits : bool, optional
         Whether model prediction will be logits or probabilities.
@@ -140,6 +160,37 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
     **kwargs : keyword arguments
         Other keyword arguments for :class:`tf.keras.losses.Loss` (e.g., `name`
         or `reduction`).
+
+    Examples
+    --------
+
+    An instance of this class is a callable that takes a rank-one tensor of
+    integer class labels `y_true` and a tensor of model predictions `y_pred` and
+    returns a scalar tensor obtained by reducing the per-example focal loss (the
+    default reduction is a batch-wise average).
+
+    >>> from focal_loss import SparseCategoricalFocalLoss
+    >>> loss_func = SparseCategoricalFocalLoss(gamma=2)
+    >>> y_true = [0, 1, 2]
+    >>> y_pred = [[0.8, 0.1, 0.1], [0.2, 0.7, 0.1], [0.2, 0.2, 0.6]]
+    >>> loss_func(y_true, y_pred)
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.040919524>
+
+    Use this class in the :mod:`tf.keras` API like any other multiclass
+    classification loss function class that accepts integer labels found in
+    :mod:`tf.keras.losses` (e.g.,
+    :class:`tf.keras.losses.SparseCategoricalCrossentropy`:
+
+    .. code-block:: python
+
+        # Typical usage
+        model = tf.keras.Model(...)
+        model.compile(
+            optimizer=...,
+            loss=SparseCategoricalFocalLoss(gamma=2),  # Used here like a tf.keras loss
+            metrics=...,
+        )
+        history = model.fit(...)
 
     See Also
     --------
@@ -177,12 +228,12 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
 
         Parameters
         ----------
-        y_true : tensor-like
-            Binary (0 or 1) class labels.
+        y_true : tensor-like, shape (N,)
+            Integer class labels.
 
-        y_pred : tensor-like
+        y_pred : tensor-like, shape (N, K)
             Either probabilities or logits, depending on the `from_logits`
-            attribute.
+            parameter.
 
         Returns
         -------

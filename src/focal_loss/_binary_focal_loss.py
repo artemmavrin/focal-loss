@@ -18,8 +18,9 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
     r"""Focal loss function for binary classification.
 
     This loss function generalizes binary cross-entropy by introducing a
-    hyperparameter called the *focusing parameter* that allows hard-to-classify
-    examples to be penalized more heavily relative to easy-to-classify examples.
+    hyperparameter :math:`\gamma` (gamma), called the *focusing parameter*,
+    that allows hard-to-classify examples to be penalized more heavily relative
+    to easy-to-classify examples.
 
     The focal loss [1]_ is defined as
 
@@ -57,8 +58,8 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
         and `y_pred` should be broadcastable.
 
     gamma : float
-        The focusing parameter :math:`\gamma`. Higher values of `gamma` lead to
-        easy-to-classify examples to contribute less to the loss relative to
+        The focusing parameter :math:`\gamma`. Higher values of `gamma` make
+        easy-to-classify examples contribute less to the loss relative to
         hard-to-classify examples. Must be non-negative.
 
     pos_weight : float, optional
@@ -94,8 +95,8 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
 
     >>> import numpy as np
     >>> from focal_loss import binary_focal_loss
-    >>> np.set_printoptions(precision=3)
     >>> loss = binary_focal_loss([0, 1, 1], [0.1, 0.7, 0.9], gamma=2)
+    >>> np.set_printoptions(precision=3)
     >>> print(loss.numpy())
     [0.001 0.032 0.001]
 
@@ -311,8 +312,9 @@ class BinaryFocalLoss(tf.keras.losses.Loss):
     >>> print(f'Mean focal loss: {loss.numpy():.3f}')
     Mean focal loss: 0.011
 
-    Use this class in the :mod:`tf.keras` API like any other loss function class
-    found in :mod:`tf.keras.losses`:
+    Use this class in the :mod:`tf.keras` API like any other binary
+    classification loss function class found in :mod:`tf.keras.losses` (e.g.,
+    :class:`tf.keras.losses.BinaryCrossentropy`:
 
     .. code-block:: python
 
