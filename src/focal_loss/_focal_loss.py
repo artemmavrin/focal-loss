@@ -8,7 +8,6 @@ from functools import partial
 
 import tensorflow as tf
 
-from .utils.keras import register_keras_custom_object
 from .utils.validation import check_bool, check_float
 
 _EPSILON = tf.keras.backend.epsilon()
@@ -266,7 +265,7 @@ def binary_focal_loss(y_true, y_pred, gamma, *, pos_weight=None,
                                              label_smoothing=label_smoothing)
 
 
-@register_keras_custom_object
+@tf.keras.utils.register_keras_serializable()
 class BinaryFocalLoss(tf.keras.losses.Loss):
     r"""Focal loss function for binary classification.
 

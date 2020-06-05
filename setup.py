@@ -5,20 +5,6 @@ import re
 
 from setuptools import setup, find_packages
 
-# Check for TensorFlow>=2.0
-tf_error_msg = '''
-TensorFlow 2.0 or later must be installed.
-Please see https://www.tensorflow.org/install for installation instructions.'''
-try:
-    import tensorflow as tf
-except ModuleNotFoundError as e:
-    tf_error_msg = str(e) + tf_error_msg
-    raise ModuleNotFoundError(tf_error_msg)
-else:
-    if tf.__version__ < '2':
-        tf_error_msg = f'Found TensorFlow {tf.__version__}' + tf_error_msg
-        raise ModuleNotFoundError(tf_error_msg)
-
 # Directory of this setup.py file
 _HERE = pathlib.Path(__file__).parent
 
@@ -67,6 +53,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Scientific/Engineering :: Mathematics',
@@ -74,10 +61,7 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    # TensorFlow is not listed as a requirement because there is currently no
-    # robust way to specify the correct CPU or GPU version
-    # https://github.com/tensorflow/tensorflow/issues/7166
-    install_requires=[],
+    install_requires=_read('requirements.txt').splitlines(),
     extras_require={
         # The 'dev' extra is for development, including running tests and
         # generating documentation
