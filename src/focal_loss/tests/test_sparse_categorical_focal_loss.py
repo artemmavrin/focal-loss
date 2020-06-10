@@ -250,3 +250,21 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
 
         # Delete the created SavedModel directory
         shutil.rmtree(sm_filepath, ignore_errors=True)
+
+    def test_with_higher_rank_inputs(self):
+        """Addresses https://github.com/artemmavrin/focal-loss/issues/5"""
+
+        def build_model():
+            return tf.keras.Sequential([
+                tf.keras.layers.Input((100, 10)),
+                tf.keras.layers.GRU(13, return_sequences=True),
+                tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(13)),
+            ])
+
+        x = np.zeros((20, 100, 10))
+        y = np.ones((20, 100, 1))
+
+        model = build_model()
+        loss = SparseCategoricalFocalLoss(gamma=2)
+        model.compile(loss=loss, optimizer='adam')
+        model.fit(x, y)
