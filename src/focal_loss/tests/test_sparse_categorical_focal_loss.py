@@ -73,6 +73,8 @@ def numpy_sparse_categorical_focal_loss(y_true, y_pred, gamma,
 
     if from_logits:
         y_pred = softmax(y_pred, axis=-1)
+    else:
+        y_pred = np.clip(y_pred, 1e-7, 1-1e-7)
 
     loss = -y_true_one_hot * (1 - y_pred) ** gamma * np.log(y_pred)
     loss = np.sum(loss, axis=-1)
@@ -280,3 +282,35 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
         loss = SparseCategoricalFocalLoss(gamma=2)
         model.compile(loss=loss, optimizer='adam')
         model.fit(x, y)
+
+    @named_parameters_with_testcase_names(axis=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_reduce_to_keras_with_higher_rank_and_axis(self, axis, from_logits):
+        labels = tf.convert_to_tensor([[0, 1, 2], [0, 0, 0], [1, 1, 1]],
+                                      dtype=tf.dtypes.int64)
+        logits = tf.reshape(tf.range(27, dtype=tf.dtypes.float32),
+                            shape=[3, 3, 3])
+        probs = tf.nn.softmax(logits, axis=axis)
+
+        y_pred = logits if from_logits else probs
+        keras_loss = tf.keras.losses.sparse_categorical_crossentropy(
+            labels, y_pred, from_logits=from_logits, axis=axis)
+        focal_loss = sparse_categorical_focal_loss(
+            labels, y_pred, gamma=0, from_logits=from_logits, axis=axis)
+        self.assertAllClose(focal_loss, keras_loss)
+
+    @named_parameters_with_testcase_names(gamma=[0, 1, 2], axis=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_higher_rank_sanity_checks(self, gamma, axis, from_logits):
+        labels = tf.convert_to_tensor([[0, 1, 2], [0, 0, 0], [1, 1, 1]],
+                                      dtype=tf.dtypes.int64)
+        logits = tf.reshape(tf.range(27, dtype=tf.dtypes.float32),
+                            shape=[3, 3, 3])
+        probs = tf.nn.softmax(logits, axis=axis)
+
+        y_pred = logits if from_logits else probs
+        numpy_loss = numpy_sparse_categorical_focal_loss(
+            labels, y_pred, gamma=gamma, from_logits=from_logits, axis=axis)
+        focal_loss = sparse_categorical_focal_loss(
+            labels, y_pred, gamma=gamma, from_logits=from_logits, axis=axis)
+        self.assertAllClose(focal_loss, numpy_loss)
