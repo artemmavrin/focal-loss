@@ -53,20 +53,34 @@ Y_PRED_PROB = [Y_PRED_PROB_LIST, Y_PRED_PROB_ARRAY, Y_PRED_PROB_TENSOR]
 
 
 def numpy_sparse_categorical_focal_loss(y_true, y_pred, gamma,
-                                        from_logits=False):
+                                        from_logits=False, axis=-1):
     """Simple sparse categorical focal loss implementation using NumPy."""
-    # Convert to arrays
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
+    if axis != -1:
+        pred_dim = np.ndim(y_pred)
+        axes = list(range(axis)) + list(range(axis + 1, pred_dim)) + [axis]
+        y_pred = np.transpose(y_pred, axes)
+
+    y_pred_shape_original = y_pred.shape
+    n_classes = y_pred_shape_original[-1]
+    y_true = np.reshape(y_true, newshape=[-1])
+    y_pred = np.reshape(y_pred, newshape=[-1, n_classes])
+
     # One-hot encoding of integer labels
-    y_true_one_hot = np.eye(y_pred.shape[-1])[y_true]
+    y_true_one_hot = np.eye(n_classes)[y_true]
 
     if from_logits:
         y_pred = softmax(y_pred, axis=-1)
+    else:
+        y_pred = np.clip(y_pred, 1e-7, 1-1e-7)
 
     loss = -y_true_one_hot * (1 - y_pred) ** gamma * np.log(y_pred)
-    return loss.sum(axis=-1)
+    loss = np.sum(loss, axis=-1)
+    loss = np.reshape(loss, y_pred_shape_original[:-1])
+
+    return loss
 
 
 def get_dummy_sparse_multiclass_classifier(n_features, n_classes, gamma,
@@ -250,3 +264,95 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
 
         # Delete the created SavedModel directory
         shutil.rmtree(sm_filepath, ignore_errors=True)
+
+    def test_with_higher_rank_inputs(self):
+        """Addresses https://github.com/artemmavrin/focal-loss/issues/5"""
+
+        def build_model():
+            return tf.keras.Sequential([
+                tf.keras.layers.Input((100, 10)),
+                tf.keras.layers.GRU(13, return_sequences=True),
+                tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(13)),
+            ])
+
+        x = np.zeros((20, 100, 10))
+        y = np.ones((20, 100, 1))
+
+        model = build_model()
+        loss = SparseCategoricalFocalLoss(gamma=2)
+        model.compile(loss=loss, optimizer='adam')
+        model.fit(x, y)
+
+    @named_parameters_with_testcase_names(axis=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_reduce_to_keras_with_higher_rank_and_axis(self, axis, from_logits):
+        labels = tf.convert_to_tensor([[0, 1, 2], [0, 0, 0], [1, 1, 1]],
+                                      dtype=tf.dtypes.int64)
+        logits = tf.reshape(tf.range(27, dtype=tf.dtypes.float32),
+                            shape=[3, 3, 3])
+        probs = tf.nn.softmax(logits, axis=axis)
+
+        y_pred = logits if from_logits else probs
+        keras_loss = tf.keras.losses.sparse_categorical_crossentropy(
+            labels, y_pred, from_logits=from_logits, axis=axis)
+        focal_loss = sparse_categorical_focal_loss(
+            labels, y_pred, gamma=0, from_logits=from_logits, axis=axis)
+        self.assertAllClose(focal_loss, keras_loss)
+
+    @named_parameters_with_testcase_names(gamma=[0, 1, 2], axis=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_higher_rank_sanity_checks(self, gamma, axis, from_logits):
+        labels = tf.convert_to_tensor([[0, 1, 2], [0, 0, 0], [1, 1, 1]],
+                                      dtype=tf.dtypes.int64)
+        logits = tf.reshape(tf.range(27, dtype=tf.dtypes.float32),
+                            shape=[3, 3, 3])
+        probs = tf.nn.softmax(logits, axis=axis)
+
+        y_pred = logits if from_logits else probs
+        numpy_loss = numpy_sparse_categorical_focal_loss(
+            labels, y_pred, gamma=gamma, from_logits=from_logits, axis=axis)
+        focal_loss = sparse_categorical_focal_loss(
+            labels, y_pred, gamma=gamma, from_logits=from_logits, axis=axis)
+        self.assertAllClose(focal_loss, numpy_loss)
+
+    @named_parameters_with_testcase_names(gamma=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_with_dynamic_ranks(self, gamma, from_logits):
+        # y_true must have defined rank
+        y_true = tf.keras.backend.placeholder(None, dtype=tf.int64)
+        y_pred = tf.keras.backend.placeholder((None, 2), dtype=tf.float32)
+        with self.assertRaises(NotImplementedError):
+            sparse_categorical_focal_loss(y_true, y_pred, gamma=gamma,
+                                          from_logits=from_logits)
+
+        # If axis is specified, y_pred must have a defined rank
+        y_true = tf.keras.backend.placeholder((None,), dtype=tf.int64)
+        y_pred = tf.keras.backend.placeholder(None, dtype=tf.float32)
+        with self.assertRaises(ValueError):
+            sparse_categorical_focal_loss(y_true, y_pred, gamma=gamma,
+                                          from_logits=from_logits, axis=0)
+
+        # It's fine if y_pred has undefined rank is axis=-1
+        graph = tf.Graph()
+        with graph.as_default():
+            y_true = tf.keras.backend.placeholder((None,), dtype=tf.int64)
+            y_pred = tf.keras.backend.placeholder(None, dtype=tf.float32)
+            focal_loss = sparse_categorical_focal_loss(y_true, y_pred,
+                                                       gamma=gamma,
+                                                       from_logits=from_logits)
+
+        labels = [0, 0, 1]
+        logits = [[10., 0.], [5., -5.], [0., 10.]]
+        probs = softmax(logits, axis=-1)
+
+        pred = logits if from_logits else probs
+        loss_numpy = numpy_sparse_categorical_focal_loss(
+            labels, pred, gamma=gamma, from_logits=from_logits)
+
+        with tf.compat.v1.Session(graph=graph) as sess:
+            loss = sess.run(focal_loss,
+                            feed_dict={y_true: labels, y_pred: pred})
+
+        self.assertAllClose(loss, loss_numpy)
+
+

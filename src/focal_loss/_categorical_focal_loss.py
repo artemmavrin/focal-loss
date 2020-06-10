@@ -6,11 +6,16 @@
 #  | |   | (_) | | (__  | (_| | | |   | | | (_) | \__ \ \__ \
 #  |_|    \___/   \___|  \__,_| |_|   |_|  \___/  |___/ |___/
 
+import itertools
+
 import tensorflow as tf
+
+_EPSILON = tf.keras.backend.epsilon()
 
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
-                                  from_logits: bool = False) -> tf.Tensor:
+                                  from_logits: bool = False, axis: int = -1
+                                  ) -> tf.Tensor:
     r"""Focal loss function for multiclass classification with integer labels.
 
     This loss function generalizes multiclass softmax cross-entropy by
@@ -46,10 +51,10 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     Parameters
     ----------
-    y_true : tensor-like, shape (N,)
+    y_true : tensor-like
         Integer class labels.
 
-    y_pred : tensor-like, shape (N, K)
+    y_pred : tensor-like
         Either probabilities or logits, depending on the `from_logits`
         parameter.
 
@@ -62,6 +67,9 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
 
     from_logits : bool, optional
         Whether `y_pred` contains logits or probabilities.
+
+    axis : int, optional
+        Channel axis in the `y_pred` tensor.
 
     Returns
     -------
@@ -103,33 +111,64 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         A wrapper around this function that makes it a
         :class:`tf.keras.losses.Loss`.
     """
+    # Process focusing parameter
     gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
-    scalar_gamma = gamma.shape == []
+    gamma_rank = gamma.shape.rank
+    scalar_gamma = gamma_rank == 0
 
+    # Process prediction tensor
     y_pred = tf.convert_to_tensor(y_pred)
-    y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int32)
-    base_loss = tf.keras.backend.sparse_categorical_crossentropy(
-        target=y_true, output=y_pred, from_logits=from_logits)
+    y_pred_rank = y_pred.shape.rank
+    if y_pred_rank is not None:
+        axis %= y_pred_rank
+        if axis != y_pred_rank - 1:
+            # Put channel axis last for sparse_softmax_cross_entropy_with_logits
+            perm = list(itertools.chain(range(axis),
+                                        range(axis + 1, y_pred_rank), [axis]))
+            y_pred = tf.transpose(y_pred, perm=perm)
+    elif axis != -1:
+        raise ValueError(
+            f'Cannot compute sparse categorical focal loss with axis={axis} on '
+            'a prediction tensor with statically unknown rank.')
+    y_pred_shape = tf.shape(y_pred)
+
+    # Process ground truth tensor
+    y_true = tf.dtypes.cast(y_true, dtype=tf.dtypes.int64)
+    y_true_rank = y_true.shape.rank
+
+    if y_true_rank is None:
+        raise NotImplementedError('Sparse categorical focal loss not supported '
+                                  'for target/label tensors of unknown rank')
+
+    reshape_needed = (y_true_rank is not None and y_pred_rank is not None and
+                      y_pred_rank != y_true_rank + 1)
+    if reshape_needed:
+        y_true = tf.reshape(y_true, [-1])
+        y_pred = tf.reshape(y_pred, [-1, y_pred_shape[-1]])
 
     if from_logits:
+        logits = y_pred
         probs = tf.nn.softmax(y_pred, axis=-1)
     else:
         probs = y_pred
-    batch_size = tf.shape(y_true)[0]
+        logits = tf.math.log(tf.clip_by_value(y_pred, _EPSILON, 1 - _EPSILON))
 
-    # For some reason y_true becomes shaped like (batch, 1) during training, so
-    # the next line is a hack to ensure it's always rank 1 (needed for stacking)
-    y_true = tf.cond(tf.rank(y_true) == 1, lambda: y_true, lambda: y_true[:, 0])
+    xent_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+        labels=y_true,
+        logits=logits,
+    )
 
-    indices = tf.stack([tf.range(batch_size), y_true], axis=1)
-    probs = tf.gather_nd(probs, indices)
+    y_true_rank = y_true.shape.rank
+    probs = tf.gather(probs, y_true, axis=-1, batch_dims=y_true_rank)
+    if not scalar_gamma:
+        gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
+    focal_modulation = (1 - probs) ** gamma
+    loss = focal_modulation * xent_loss
 
-    if scalar_gamma:
-        focal_modulation = (1 - probs) ** gamma
-    else:
-        focal_modulation = (1 - probs) ** tf.gather(gamma, y_true)
+    if reshape_needed:
+        loss = tf.reshape(loss, y_pred_shape[:-1])
 
-    return focal_modulation * base_loss
+    return loss
 
 
 @tf.keras.utils.register_keras_serializable()
@@ -198,6 +237,7 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         The function that performs the focal loss computation, taking a label
         tensor and a prediction tensor and outputting a loss.
     """
+
     def __init__(self, gamma, from_logits: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
