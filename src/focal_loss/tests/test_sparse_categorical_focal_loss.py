@@ -314,3 +314,45 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
         focal_loss = sparse_categorical_focal_loss(
             labels, y_pred, gamma=gamma, from_logits=from_logits, axis=axis)
         self.assertAllClose(focal_loss, numpy_loss)
+
+    @named_parameters_with_testcase_names(gamma=[0, 1, 2],
+                                          from_logits=[False, True])
+    def test_with_dynamic_ranks(self, gamma, from_logits):
+        # y_true must have defined rank
+        y_true = tf.keras.backend.placeholder(None, dtype=tf.int64)
+        y_pred = tf.keras.backend.placeholder((None, 2), dtype=tf.float32)
+        with self.assertRaises(NotImplementedError):
+            sparse_categorical_focal_loss(y_true, y_pred, gamma=gamma,
+                                          from_logits=from_logits)
+
+        # If axis is specified, y_pred must have a defined rank
+        y_true = tf.keras.backend.placeholder((None,), dtype=tf.int64)
+        y_pred = tf.keras.backend.placeholder(None, dtype=tf.float32)
+        with self.assertRaises(ValueError):
+            sparse_categorical_focal_loss(y_true, y_pred, gamma=gamma,
+                                          from_logits=from_logits, axis=0)
+
+        # It's fine if y_pred has undefined rank is axis=-1
+        graph = tf.Graph()
+        with graph.as_default():
+            y_true = tf.keras.backend.placeholder((None,), dtype=tf.int64)
+            y_pred = tf.keras.backend.placeholder(None, dtype=tf.float32)
+            focal_loss = sparse_categorical_focal_loss(y_true, y_pred,
+                                                       gamma=gamma,
+                                                       from_logits=from_logits)
+
+        labels = [0, 0, 1]
+        logits = [[10., 0.], [5., -5.], [0., 10.]]
+        probs = softmax(logits, axis=-1)
+
+        pred = logits if from_logits else probs
+        loss_numpy = numpy_sparse_categorical_focal_loss(
+            labels, pred, gamma=gamma, from_logits=from_logits)
+
+        with tf.compat.v1.Session(graph=graph) as sess:
+            loss = sess.run(focal_loss,
+                            feed_dict={y_true: labels, y_pred: pred})
+
+        self.assertAllClose(loss, loss_numpy)
+
+
