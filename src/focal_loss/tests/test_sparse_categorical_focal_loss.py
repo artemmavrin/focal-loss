@@ -53,20 +53,32 @@ Y_PRED_PROB = [Y_PRED_PROB_LIST, Y_PRED_PROB_ARRAY, Y_PRED_PROB_TENSOR]
 
 
 def numpy_sparse_categorical_focal_loss(y_true, y_pred, gamma,
-                                        from_logits=False):
+                                        from_logits=False, axis=-1):
     """Simple sparse categorical focal loss implementation using NumPy."""
-    # Convert to arrays
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
+    if axis != -1:
+        pred_dim = np.ndim(y_pred)
+        axes = list(range(axis)) + list(range(axis + 1, pred_dim)) + [axis]
+        y_pred = np.transpose(y_pred, axes)
+
+    y_pred_shape_original = y_pred.shape
+    n_classes = y_pred_shape_original[-1]
+    y_true = np.reshape(y_true, newshape=[-1])
+    y_pred = np.reshape(y_pred, newshape=[-1, n_classes])
+
     # One-hot encoding of integer labels
-    y_true_one_hot = np.eye(y_pred.shape[-1])[y_true]
+    y_true_one_hot = np.eye(n_classes)[y_true]
 
     if from_logits:
         y_pred = softmax(y_pred, axis=-1)
 
     loss = -y_true_one_hot * (1 - y_pred) ** gamma * np.log(y_pred)
-    return loss.sum(axis=-1)
+    loss = np.sum(loss, axis=-1)
+    loss = np.reshape(loss, y_pred_shape_original[:-1])
+
+    return loss
 
 
 def get_dummy_sparse_multiclass_classifier(n_features, n_classes, gamma,

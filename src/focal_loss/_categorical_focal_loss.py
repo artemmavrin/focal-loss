@@ -114,12 +114,6 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     # Process focusing parameter
     gamma = tf.convert_to_tensor(gamma, dtype=tf.dtypes.float32)
     gamma_rank = gamma.shape.rank
-    if gamma_rank is None:
-        raise ValueError(
-            'Focal loss focusing parameter gamma must have a defined rank')
-    elif gamma_rank >= 2:
-        raise ValueError(
-            'Focal loss focusing parameter gamma must have rank 0 or 1')
     scalar_gamma = gamma_rank == 0
 
     # Process prediction tensor
@@ -243,6 +237,7 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         The function that performs the focal loss computation, taking a label
         tensor and a prediction tensor and outputting a loss.
     """
+
     def __init__(self, gamma, from_logits: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
