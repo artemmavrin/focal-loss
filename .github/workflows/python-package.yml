@@ -18,7 +18,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Using CPU=${{ matrix.cpu }}
-      if: matrix.cpu == 'true'
+      if: matrix.cpu
       run: |
         export TF_CPU=
     - name: Install package
