@@ -7,6 +7,7 @@
 #  |_|    \___/   \___|  \__,_| |_|   |_|  \___/  |___/ |___/
 
 import itertools
+from typing import Any, Optional
 
 import tensorflow as tf
 
@@ -14,6 +15,7 @@ _EPSILON = tf.keras.backend.epsilon()
 
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
+                                  class_weight: Optional[Any] = None,
                                   from_logits: bool = False, axis: int = -1
                                   ) -> tf.Tensor:
     r"""Focal loss function for multiclass classification with integer labels.
@@ -64,6 +66,10 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         hard-to-classify examples. Must be non-negative. This can be a
         one-dimensional tensor, in which case it specifies a focusing parameter
         for each class.
+
+    class_weight: tensor-like of shape (K,)
+        Weighting factor for each of the :math:`k` classes. If not specified,
+        then all classes are weighted equally.
 
     from_logits : bool, optional
         Whether `y_pred` contains logits or probabilities.
@@ -116,6 +122,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     gamma_rank = gamma.shape.rank
     scalar_gamma = gamma_rank == 0
 
+    # Process class weight
+    if class_weight is not None:
+        class_weight = tf.convert_to_tensor(class_weight,
+                                            dtype=tf.dtypes.float32)
+
     # Process prediction tensor
     y_pred = tf.convert_to_tensor(y_pred)
     y_pred_rank = y_pred.shape.rank
@@ -164,6 +175,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         gamma = tf.gather(gamma, y_true, axis=0, batch_dims=y_true_rank)
     focal_modulation = (1 - probs) ** gamma
     loss = focal_modulation * xent_loss
+
+    if class_weight is not None:
+        class_weight = tf.gather(class_weight, y_true, axis=0,
+                                 batch_dims=y_true_rank)
+        loss *= class_weight
 
     if reshape_needed:
         loss = tf.reshape(loss, y_pred_shape[:-1])

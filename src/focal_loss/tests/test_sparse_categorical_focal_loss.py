@@ -355,4 +355,27 @@ class SparseCategoricalFocalLossTest(parameterized.TestCase, tf.test.TestCase):
 
         self.assertAllClose(loss, loss_numpy)
 
+    @named_parameters_with_testcase_names(y_true=Y_TRUE, y_pred=Y_PRED_PROB,
+                                          gamma=[0, 1, 2])
+    def test_class_weight(self, y_true, y_pred, gamma):
+        rng = np.random.default_rng(0)
+        for _ in range(10):
+            class_weight = rng.uniform(size=np.shape(y_pred)[-1])
 
+            loss_without_weight = sparse_categorical_focal_loss(
+                y_true=y_true,
+                y_pred=y_pred,
+                gamma=gamma,
+            )
+            loss_with_weight = sparse_categorical_focal_loss(
+                y_true=y_true,
+                y_pred=y_pred,
+                gamma=gamma,
+                class_weight=class_weight,
+            )
+
+            # Apply class weights to loss computed without class_weight
+            loss_without_weight = loss_without_weight.numpy()
+            loss_without_weight *= np.take(class_weight, y_true)
+
+            self.assertAllClose(loss_with_weight, loss_without_weight)
