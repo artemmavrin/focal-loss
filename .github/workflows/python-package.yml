@@ -20,7 +20,7 @@ jobs:
     - name: Using CPU=${{ matrix.cpu }}
       if: matrix.cpu
       env:
-        TF_CPU:
+        TF_CPU: cpu
       run: echo "Set TF_CPU to '$TF_CPU'"
     - name: Install package
       run: |
