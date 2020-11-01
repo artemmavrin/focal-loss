@@ -7,6 +7,7 @@
 #  |_|    \___/   \___|  \__,_| |_|   |_|  \___/  |___/ |___/
 
 import itertools
+from typing import Any, Optional
 
 import tensorflow as tf
 
@@ -14,6 +15,7 @@ _EPSILON = tf.keras.backend.epsilon()
 
 
 def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
+                                  class_weight: Optional[Any] = None,
                                   from_logits: bool = False, axis: int = -1
                                   ) -> tf.Tensor:
     r"""Focal loss function for multiclass classification with integer labels.
@@ -64,6 +66,10 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
         hard-to-classify examples. Must be non-negative. This can be a
         one-dimensional tensor, in which case it specifies a focusing parameter
         for each class.
+
+    class_weight: tensor-like of shape (K,)
+        Weighting factor for each of the :math:`k` classes. If not specified,
+        then all classes are weighted equally.
 
     from_logits : bool, optional
         Whether `y_pred` contains logits or probabilities.
@@ -116,6 +122,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     gamma_rank = gamma.shape.rank
     scalar_gamma = gamma_rank == 0
 
+    # Process class weight
+    if class_weight is not None:
+        class_weight = tf.convert_to_tensor(class_weight,
+                                            dtype=tf.dtypes.float32)
+
     # Process prediction tensor
     y_pred = tf.convert_to_tensor(y_pred)
     y_pred_rank = y_pred.shape.rank
@@ -165,6 +176,11 @@ def sparse_categorical_focal_loss(y_true, y_pred, gamma, *,
     focal_modulation = (1 - probs) ** gamma
     loss = focal_modulation * xent_loss
 
+    if class_weight is not None:
+        class_weight = tf.gather(class_weight, y_true, axis=0,
+                                 batch_dims=y_true_rank)
+        loss *= class_weight
+
     if reshape_needed:
         loss = tf.reshape(loss, y_pred_shape[:-1])
 
@@ -192,6 +208,10 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         hard-to-classify examples. Must be non-negative. This can be a
         one-dimensional tensor, in which case it specifies a focusing parameter
         for each class.
+
+    class_weight: tensor-like of shape (K,)
+        Weighting factor for each of the :math:`k` classes. If not specified,
+        then all classes are weighted equally.
 
     from_logits : bool, optional
         Whether model prediction will be logits or probabilities.
@@ -238,9 +258,11 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         tensor and a prediction tensor and outputting a loss.
     """
 
-    def __init__(self, gamma, from_logits: bool = False, **kwargs):
+    def __init__(self, gamma, class_weight: Optional[Any] = None,
+                 from_logits: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
+        self.class_weight = class_weight
         self.from_logits = from_logits
 
     def get_config(self):
@@ -256,7 +278,8 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
             This layer's config.
         """
         config = super().get_config()
-        config.update(gamma=self.gamma, from_logits=self.from_logits)
+        config.update(gamma=self.gamma, class_weight=self.class_weight,
+                      from_logits=self.from_logits)
         return config
 
     def call(self, y_true, y_pred):
@@ -283,5 +306,6 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
             :meth:`~focal_loss.SparseCateogiricalFocalLoss.__call__` method.
         """
         return sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+                                             class_weight=self.class_weight,
                                              gamma=self.gamma,
                                              from_logits=self.from_logits)
