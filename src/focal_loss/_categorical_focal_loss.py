@@ -209,6 +209,10 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         one-dimensional tensor, in which case it specifies a focusing parameter
         for each class.
 
+    class_weight: tensor-like of shape (K,)
+        Weighting factor for each of the :math:`k` classes. If not specified,
+        then all classes are weighted equally.
+
     from_logits : bool, optional
         Whether model prediction will be logits or probabilities.
 
@@ -254,9 +258,11 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
         tensor and a prediction tensor and outputting a loss.
     """
 
-    def __init__(self, gamma, from_logits: bool = False, **kwargs):
+    def __init__(self, gamma, class_weight: Optional[Any] = None,
+                 from_logits: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.gamma = gamma
+        self.class_weight = class_weight
         self.from_logits = from_logits
 
     def get_config(self):
@@ -272,7 +278,8 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
             This layer's config.
         """
         config = super().get_config()
-        config.update(gamma=self.gamma, from_logits=self.from_logits)
+        config.update(gamma=self.gamma, class_weight=self.class_weight,
+                      from_logits=self.from_logits)
         return config
 
     def call(self, y_true, y_pred):
@@ -299,5 +306,6 @@ class SparseCategoricalFocalLoss(tf.keras.losses.Loss):
             :meth:`~focal_loss.SparseCateogiricalFocalLoss.__call__` method.
         """
         return sparse_categorical_focal_loss(y_true=y_true, y_pred=y_pred,
+                                             class_weight=self.class_weight,
                                              gamma=self.gamma,
                                              from_logits=self.from_logits)
