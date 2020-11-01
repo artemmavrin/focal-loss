@@ -19,8 +19,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Using CPU=${{ matrix.cpu }}
       if: matrix.cpu
-      run: |
-        export TF_CPU=
+      env:
+        TF_CPU:
+      run: echo "Set TF_CPU to '$TF_CPU'"
     - name: Install package
       run: |
         make dev
