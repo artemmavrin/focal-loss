@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Using CPU: ${{ matrix.cpu }}
+    - name: Using CPU=${{ matrix.cpu }}
       env:
         TF_CPU:
       if: matrix.cpu == 'true'
